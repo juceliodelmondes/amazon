@@ -1,0 +1,9 @@
+
+Etapas inicialização:
+1 - Instalar o node
+2 - Instalar o Java 8
+3 - Executar o Amazon.jar (caso o java não crie o diretorio node_modules dentro de node, instalar manuialmente no diretorio com (npm install)
+
+----------------
+Argumentos:
+java -jar Amazon.jar iphone samsung (pesquisará por iphone e samsung para gerar planilha)

@@ -1,0 +1,157 @@
+Classe Main:
+
+
+import java.awt.Font;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import javax.swing.JFrame;
+import javax.swing.JOptionPane;
+import javax.swing.JTextField;
+import javax.swing.SwingConstants;
+import org.apache.poi.hssf.usermodel.HSSFSheet;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Cell;
+
+
+
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+
+/**
+ *
+ * @author Jucelio
+ */
+/*
+Este software realizará a pesquisa no site da amazon e armazenará os dados da primeira
+página em uma planilha
+se o usuario passar parâmetros de entrada, será utilizado com prioridade e não aparecerá o input
+se o usuário executar sem parâmetros, o software perguntará qual o produto que ele deseja
+
+*/
+public class Main {
+    
+    public static JTextField textoJFrame = new JTextField("");
+    public static JFrame frame = new JFrame();
+    public static void main(String[] args) throws IOException {
+        String start = "cmd /c cd node\\ & npm install"; //baixa as dependencias
+        Runtime.getRuntime().exec(start);
+        ArrayList<String> produtos = new ArrayList<>(); //array dinâmico para várias pesquisas
+        try {
+            boolean comParametros = false;
+            if(args.length > 0) for(int i = 0; i < args.length; i++) if(!args[i].isEmpty()) comParametros = true;
+            if(comParametros) for(int i = 0; i < args.length; i++) produtos.add(args[i]); else {
+                String result = JOptionPane.showInputDialog(null, "Digite os produtos a serem pesquisados no site da Amazon!\nPara pesquisar vários produtos, separe-os com espaço, ex: Iphone Samsung");
+                String[] resultArray = result.split(" ");
+                if(resultArray.length > 0) for(int i = 0; i < resultArray.length; i++) produtos.add(resultArray[i]); else System.exit(0);
+            }
+            if(!comParametros) {
+                textoJFrame.setHorizontalAlignment(SwingConstants.CENTER);          
+                textoJFrame.setFont(new Font("Arial", Font.BOLD, 15));
+                textoJFrame.setEditable(false);
+
+                frame.setResizable(false);
+                frame.setBounds(0, 0, 320, 240);
+                frame.setLocationRelativeTo(null);
+                frame.add(textoJFrame);
+                frame.setTitle("Pesquisando");
+                frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                frame.show();
+            }
+            if(pesquisar(produtos)) System.exit(0);
+        } catch(Exception er) {System.exit(0);}
+    }
+    
+    public static boolean pesquisar(ArrayList<String> produtos) throws IOException {
+        for(String result : produtos) {
+            textoJFrame.setText("Pesquisando por: "+result);
+            System.out.println("Pesquisando por: "+result);
+            String command = "cmd /c node node\\index.js "+result;
+            Process child = Runtime.getRuntime().exec(command);
+            BufferedReader in = new BufferedReader( new InputStreamReader(child.getInputStream()));
+            String resultLine = "";
+            ArrayList<Data> listaProdutos = new ArrayList<>(); //lista de produtos, ex: Lista de iphones
+            while((resultLine = in.readLine()) != null) {
+                //Resultado do node
+                String arraySplit[] = resultLine.split("\\_");
+                textoJFrame.setText(arraySplit[0]);
+                if(arraySplit.length > 1) {
+                    Data obj = new Data();
+                    obj.setName(arraySplit[0]);
+                    obj.setPrice(arraySplit[1]);
+                    listaProdutos.add(obj);
+                }
+            }
+            gerarPlanilha(listaProdutos, result);
+        }
+        return true;
+    }
+    
+    public static void gerarPlanilha(ArrayList<Data> listaProdutos, String nomeArquivo) {
+        HSSFWorkbook workbook = new HSSFWorkbook();
+        HSSFSheet sheedProdutos = workbook.createSheet("Produtos");        
+        int rowPos = 0;
+        for (Data result : listaProdutos) {
+            Row row = sheedProdutos.createRow(rowPos++);
+            int celPos = 0;
+            Cell cellNome = row.createCell(celPos++);
+            cellNome.setCellValue(result.getName());
+            Cell cellPreco = row.createCell(celPos++);
+            cellPreco.setCellValue(result.getPrice());
+        }
+        
+        try {
+            FileOutputStream out = new FileOutputStream(new File(nomeArquivo+".xls"));
+            workbook.write(out);
+            out.close();
+            System.out.println("Planilha "+nomeArquivo+".xls criada com sucesso!");
+        } catch(Exception er) {System.out.println("Erro ao criar a planilha: "+nomeArquivo+".xls!");}
+    }
+    
+}
+
+
+-------------------
+classe Data
+
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+
+/**
+ *
+ * @author Jucelio
+ */
+public class Data {
+    private String name, price;
+    
+    public Data() {
+        this.name = "";
+        this.price = "";
+    }
+    
+    public String getName() {
+        return this.name;
+    }
+    
+    public void setName(String name) {
+        this.name = name;
+    }
+    
+    public String getPrice() {
+        return this.price;
+    }
+    
+    public void setPrice(String price) {
+        this.price = price;
+    }
+}
